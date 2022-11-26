@@ -1,0 +1,9 @@
+version: '3.7'
+services: 
+  web:
+    container_name: nginx_game
+    image: quay.io/chisanuchakim/helloermine-game
+    volumes: 
+      - ./build:/usr/share/nginx/html
+    ports:
+    - "3001:80"
