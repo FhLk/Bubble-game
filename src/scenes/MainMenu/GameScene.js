@@ -2,18 +2,21 @@ import Phaser from "phaser";
 
 let bg;
 let setPositionBallX = 28
-let shooter;
 let angle = 0;
 let line = new Phaser.Geom.Line();
 let shooterMachaine;
 let bullet;
 let bulletGroup
-let magazine = 10;
 let timeSinceLastAttackBullet = 0;
 let delayBullet = 550;
-let Reload = 0
-let getDelta
-let shoot
+let shoot;
+let shooter;
+let ballGroup1;
+let ballGroup2;
+let ballGroup3;
+let ballGroup4;
+let bulletToBallGroup
+
 
 
 class GameScene extends Phaser.Scene {
@@ -34,35 +37,46 @@ class GameScene extends Phaser.Scene {
         this.load.image("ball_yellow", "src/image/ball/ball_yellow.png")
     }
 
-    create(delta) {
+    create() {
         bg = this.add.tileSprite(0, 0, 800, 600, "bg").setOrigin(0, 0)
+        // ballGroup1 = this.physics.add.group()
+        // for (let index = 0; index < 15; index++) {
+        //     let ball=this.physics.add.image(setPositionBallX, 28, "ball_blue")
+        //     setPositionBallX += 53
+        //     ballGroup1.add(ball)
+        // }
+        // setPositionBallX = 28
+        // ballGroup2 = this.physics.add.group()
+        // for (let index = 0; index < 15; index++) {
+        //     let ball_green = this.physics.add.image(setPositionBallX + 27, 75, "ball_green")
+        //     setPositionBallX += 53
+        //     if (ball_green.x > 750) {
+        //         ball_green.destroy()
+        //     }
+        // }
+        // setPositionBallX = 28
+        // ballGroup3 = this.physics.add.group()
+        // for (let index = 0; index < 15; index++) {
+        //     let ball=this.physics.add.image(setPositionBallX, 122, "ball_orange")
+        //     setPositionBallX += 53
+        //     ballGroup3.add(ball)
+        // }
+        // setPositionBallX = 28
+        ballGroup4 = this.physics.add.group({
+            collideWorldBounds:true,
+            immovable:true
+        })
         for (let index = 0; index < 15; index++) {
-            this.physics.add.image(setPositionBallX, 28, "ball_blue")
+            let ball = this.physics.add.image(setPositionBallX + 27, 169, "ball_purple").setCircle(27.5)
+            ballGroup4.add(ball)
             setPositionBallX += 53
-        }
-        setPositionBallX = 28
-        for (let index = 0; index < 15; index++) {
-            let ball_green = this.physics.add.image(setPositionBallX + 27, 75, "ball_green")
-            setPositionBallX += 53
-            if (ball_green.x > 750) {
-                ball_green.destroy()
+            if (ball.x >= 750) {
+                ball.destroy()
             }
         }
-        setPositionBallX = 28
-        for (let index = 0; index < 15; index++) {
-            this.physics.add.image(setPositionBallX, 122, "ball_orange")
-            setPositionBallX += 53
-        }
-        setPositionBallX = 28
-        for (let index = 0; index < 15; index++) {
-            let ball_purple = this.physics.add.image(setPositionBallX + 27, 169, "ball_purple")
-            setPositionBallX += 53
-            if (ball_purple.x > 750) {
-                ball_purple.destroy()
-            }
-        }
+
         let gfx = this.add.graphics().setDefaultStyles({ lineStyle: { width: 10, color: 0xffdd00, alpha: 0.5 } });
-        shooter = this.physics.add.sprite(400, 500, "ball_blue").setDepth(100)
+        shooter = this.physics.add.sprite(400, 500, "ball_blue").setDepth(100).setCircle(27.5)
         shooterMachaine = this.add.image(400, 500, "ball_blue")
         this.input.on('pointermove', (pointer) => {
             angle = Phaser.Math.Angle.BetweenPoints(shooterMachaine, pointer);
@@ -83,35 +97,29 @@ class GameScene extends Phaser.Scene {
             velocityY: 200
         })
         shoot = this.input.mousePointer
+        bulletToBallGroup=this.physics.add.group({
+            collideWorldBounds:true,
+            immovable:true
+        })
     }
 
     update(delta, time) {
         if (shoot.leftButtonDown() && delta > (timeSinceLastAttackBullet + delayBullet)) {
-            console.log(shoot.position);
-            // bullet = this.physics.add.image(400, 500, "bullet");
-            // bulletGroup.add(bullet)
-            // this.physics.moveToObject(bullet, pointer, 200)
-            // timeSinceLastAttackBullet = delta
-            // if (magazine > 0) {
-            //     this.input.on('pointerdown', (pointer) => {
-            //         magazine--
-            //         console.log(magazine);
-                    bullet = this.physics.add.image(400, 500, "bullet");
-                    bulletGroup.add(bullet)
-                    this.physics.moveToObject(bullet, shoot.position, 200)
-                    timeSinceLastAttackBullet = delta
-            //     })
-            // }
-            // if (magazine < 0) {
-            //     Reload++;
-            //     if (Reload >= 500) {
-            //         magazine = 10;
-            //         Reload = 0;
-            //     }
-            // }
+            bullet = this.physics.add.image(400, 500, "bullet").setCircle(27.5);
+            bulletGroup.add(bullet)
+            this.physics.moveToObject(bullet, shoot.position, 200)
+            timeSinceLastAttackBullet = delta
         }
         this.physics.world.wrap(bulletGroup)
         for (let i = 0; i < bulletGroup.getChildren().length; i++) {
+            this.physics.add.collider(bulletGroup.getChildren()[i],ballGroup4,()=>{
+                bulletGroup.getChildren()[i].setVelocity(0)
+                bulletToBallGroup.add(bulletGroup.getChildren()[i])
+            })
+            this.physics.add.collider(bulletGroup.getChildren()[i],bulletToBallGroup,()=>{
+                bulletGroup.getChildren()[i].setVelocity(0)
+                bulletToBallGroup.add(bulletGroup.getChildren()[i])
+            })
             if (bulletGroup.getChildren()[i].y > 500) {
                 bulletGroup.getChildren()[i].destroy();
             }
