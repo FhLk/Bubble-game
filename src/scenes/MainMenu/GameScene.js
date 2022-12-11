@@ -16,6 +16,7 @@ let ballGroup2;
 let ballGroup3;
 let ballGroup4;
 let bulletToBallGroup
+let countBall = 1
 
 
 
@@ -63,11 +64,12 @@ class GameScene extends Phaser.Scene {
         // }
         // setPositionBallX = 28
         ballGroup4 = this.physics.add.group({
-            collideWorldBounds:true,
-            immovable:true
+            collideWorldBounds: true,
+            immovable: true
         })
         for (let index = 0; index < 15; index++) {
             let ball = this.physics.add.image(setPositionBallX + 27, 169, "ball_purple").setCircle(27.5)
+            ball.color = 0
             ballGroup4.add(ball)
             setPositionBallX += 53
             if (ball.x >= 750) {
@@ -97,31 +99,59 @@ class GameScene extends Phaser.Scene {
             velocityY: 200
         })
         shoot = this.input.mousePointer
-        bulletToBallGroup=this.physics.add.group({
-            collideWorldBounds:true,
-            immovable:true
+        bulletToBallGroup = this.physics.add.group({
+            collideWorldBounds: true,
+            immovable: true
         })
     }
 
     update(delta, time) {
         if (shoot.leftButtonDown() && delta > (timeSinceLastAttackBullet + delayBullet)) {
             bullet = this.physics.add.image(400, 500, "bullet").setCircle(27.5);
+            bullet.color = 0
             bulletGroup.add(bullet)
             this.physics.moveToObject(bullet, shoot.position, 200)
             timeSinceLastAttackBullet = delta
         }
         this.physics.world.wrap(bulletGroup)
         for (let i = 0; i < bulletGroup.getChildren().length; i++) {
-            this.physics.add.collider(bulletGroup.getChildren()[i],ballGroup4,()=>{
-                bulletGroup.getChildren()[i].setVelocity(0)
-                bulletToBallGroup.add(bulletGroup.getChildren()[i])
-            })
-            this.physics.add.collider(bulletGroup.getChildren()[i],bulletToBallGroup,()=>{
-                bulletGroup.getChildren()[i].setVelocity(0)
-                bulletToBallGroup.add(bulletGroup.getChildren()[i])
-            })
-            if (bulletGroup.getChildren()[i].y > 500) {
-                bulletGroup.getChildren()[i].destroy();
+            let bulletInGroup = bulletGroup.getChildren()[i]
+            for (let j = 0; j < ballGroup4.getChildren().length; j++) {
+                let ballInGroup = ballGroup4.getChildren()[j]
+                this.physics.add.collider(ballInGroup, bulletInGroup, () => {
+                    if (ballInGroup.color != bulletInGroup.color) {
+                        ballInGroup.destroy()
+                        bulletInGroup.destroy()
+                    }
+                    else {
+                        bulletInGroup.setVelocity(0)
+                        bulletToBallGroup.add(bulletInGroup)
+                    }
+                })
+            }
+            for (let j = 0; j < bulletToBallGroup.getChildren().length; j++) {
+                let ballInGroup = bulletToBallGroup.getChildren()[j]
+                this.physics.add.collider(ballInGroup, bulletInGroup, () => {
+                    if (ballInGroup.color == bulletInGroup.color) {
+                        countBall++;
+                        if (countBall == 3) {
+                            ballInGroup.destroy()
+                            bulletInGroup.destroy()
+                            countBall=1
+                        }
+                        else {
+                            bulletInGroup.setVelocity(0)
+                            bulletToBallGroup.add(bulletInGroup)
+                        }
+                    }
+                    else {
+                        bulletInGroup.setVelocity(0)
+                        bulletToBallGroup.add(bulletInGroup)
+                    }
+                })
+            }
+            if (bulletInGroup.y > 500) {
+                bulletInGroup.destroy();
             }
         }
     }
