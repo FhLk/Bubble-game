@@ -119,7 +119,7 @@ class GameScene extends Phaser.Scene {
             for (let j = 0; j < ballGroup4.getChildren().length; j++) {
                 let ballInGroup = ballGroup4.getChildren()[j]
                 this.physics.add.collider(ballInGroup, bulletInGroup, () => {
-                    if (ballInGroup.color != bulletInGroup.color) {
+                    if (ballInGroup.color == bulletInGroup.color) {
                         ballInGroup.destroy()
                         bulletInGroup.destroy()
                     }
@@ -133,16 +133,18 @@ class GameScene extends Phaser.Scene {
                 let ballInGroup = bulletToBallGroup.getChildren()[j]
                 this.physics.add.collider(ballInGroup, bulletInGroup, () => {
                     if (ballInGroup.color == bulletInGroup.color) {
-                        countBall++;
-                        if (countBall == 3) {
-                            ballInGroup.destroy()
-                            bulletInGroup.destroy()
-                            countBall=1
-                        }
-                        else {
-                            bulletInGroup.setVelocity(0)
-                            bulletToBallGroup.add(bulletInGroup)
-                        }
+                        ballInGroup.destroy()
+                        bulletInGroup.destroy()
+                        // countBall++;
+                        // if (countBall == 3) {
+                        //     ballInGroup.destroy()
+                        //     bulletInGroup.destroy()
+                        //     countBall=1
+                        // }
+                        // else {
+                        //     bulletInGroup.setVelocity(0)
+                        //     bulletToBallGroup.add(bulletInGroup)s
+                        // }
                     }
                     else {
                         bulletInGroup.setVelocity(0)
