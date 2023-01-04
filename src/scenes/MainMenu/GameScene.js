@@ -1,23 +1,26 @@
-import Phaser from "phaser";
+import * as Phaser from "phaser";
 
 let bg;
-let setPositionBallX = 40;
-let angle = 0;
-let line = new Phaser.Geom.Line();
-let shooterMachaine;
-let bullet;
-let bulletGroup;
+let bubbleGrid;
+let shooter;
+let nextBubble;
+let checkInPut;
 let timeSinceLastAttackBullet = 0;
 let delayBullet = 550;
-let shoot;
-let shooter;
-let ballGroup1;
-let ballGroup2;
-let ballGroup3;
-let ballGroup4;
-let oldBullet;
-let countBall = 1;
-// let test=[]
+let row = 70;
+let column = 30;
+let bubbles;
+let stackBubble=[]
+let aim;
+const rand = new Phaser.Math.RandomDataGenerator();
+let randomBall = [
+    "ball_blue",
+    "ball_green",
+    "ball_orange",
+    "ball_purple",
+    "ball_yellow",
+    "ball_red",
+];
 
 class GameScene extends Phaser.Scene {
     constructor(test) {
@@ -38,126 +41,98 @@ class GameScene extends Phaser.Scene {
     }
 
     create() {
-        bg = this.add.tileSprite(0, 0, 800, 600, "bg").setOrigin(0, 0);
-        ballGroup1 = this.physics.add.group()
-        for (let index = 0; index < 13; index++) {
-            let ball=this.physics.add.image(setPositionBallX, 28, "ball_blue")
-            setPositionBallX += 60
-            ballGroup1.add(ball)
-        }
-        setPositionBallX = 40
-        ballGroup2 = this.physics.add.group()
-        for (let index = 0; index < 13; index++) {
-            let ball_green = this.physics.add.image(setPositionBallX + 30, 75, "ball_green")
-            setPositionBallX += 60
-            if (ball_green.x > 750) {
-                ball_green.destroy()
-            }
-        }
-        setPositionBallX = 40
-        ballGroup3 = this.physics.add.group()
-        for (let index = 0; index < 13; index++) {
-            let ball=this.physics.add.image(setPositionBallX, 122, "ball_blue")
-            setPositionBallX += 60
-            ballGroup3.add(ball)
-        }
-        ballGroup4 = this.physics.add.group({
-            collideWorldBounds: true,
-            immovable: true,
-        });
-        for (let index = 0; index < 15; index++) {
-            let ball = this.physics.add
-                .image(setPositionBallX + 27, 169, "ball_purple")
-                .setCircle(27.5);
-            ball.color = 0;
-            ball.stack = []
-            ballGroup4.add(ball);
-            setPositionBallX += 53;
-            if (ball.x >= 750) {
-                ball.destroy();
-            }
-        }
+        // bg = this.add.tileSprite(0, 0, 800, 600, "bg").setOrigin(0, 0);
+        shooter = this.physics.add.sprite(400, 500, rand.pick(randomBall)).setCircle(27);
+        shooter.color = shooter.texture.key.slice(5);
+        shooter.setInteractive();
 
-        shooter = this.physics.add
-            .sprite(400, 500, "ball_blue")
-            .setDepth(100)
-            .setCircle(27.5);
-        shooterMachaine = this.add.image(400, 500, "ball_blue");
-        bulletGroup = this.physics.add.group({
-            collideWorldBounds: true,
-            bounceX: 1,
-            bounceY: 1,
-            velocityX: 200,
-            velocityY: 200,
-        });
-        shoot = this.input.mousePointer;
-        oldBullet = this.physics.add.group({
-            collideWorldBounds: true,
-            immovable: true,
+        this.input.setDraggable(shooter);
+
+        nextBubble = this.physics.add.sprite(
+            shooter.x + 30,
+            shooter.y + 50,
+            rand.pick(randomBall)
+        ).setCircle(27);
+        nextBubble.color = nextBubble.texture.key.slice(5);
+
+        checkInPut = this.input.mousePointer;
+
+        bubbleGrid = this.physics.add.group();
+        bubbles = this.physics.add.group();
+
+        for (let i = 1; i <= 5; i++) {
+            for (let j = 1; j <= 14; j++) {
+                let ball;
+                if (i % 2 == 0) {
+                    ball = this.physics.add.sprite(row, column, rand.pick(randomBall));
+                    ball.color = ball.texture.key.slice(5);
+                } else {
+                    ball = this.add.sprite(
+                        row - 25,
+                        column,
+                        rand.pick(randomBall)
+                    );
+                    ball.color = ball.texture.key.slice(5);
+                }
+                if (ball.x > 780) {
+                    ball.destroy();
+                }
+                row += 55;
+                bubbleGrid.add(ball);
+            }
+            row = 70;
+            column += 55;
+        }
+        this.input.on("pointermove", (pointer) => {
+            aim = Phaser.Math.Angle.Between(
+                shooter.x,
+                shooter.y,
+                pointer.x,
+                pointer.y
+            );
         });
     }
 
     update(delta, time) {
+        shooter.rotation = aim;
+        nextBubble.rotation = aim;
         if (
-            shoot.leftButtonDown() &&
+            checkInPut.leftButtonDown() &&
             delta > timeSinceLastAttackBullet + delayBullet
         ) {
-            bullet = this.physics.add.image(400, 500, "bullet").setCircle(27.5);
-            bullet.color = 0;
-            bullet.stack = []
-            bulletGroup.add(bullet);
-            this.physics.moveToObject(bullet, shoot.position, 1000);
+            const bubble = this.physics.add.sprite(
+                shooter.x,
+                shooter.y,
+                shooter.texture.key
+            ).setCircle(27);
+            bubble.color = shooter.color;
+            bubble.setBounce(1)
+            bubble.setCollideWorldBounds(true)
+            stackBubble.push(bubble)
+
+            shooter = this.physics.add.sprite(shooter.x,shooter.y,nextBubble.texture.key).setCircle(27)
+            shooter.color = shooter.texture.key.slice(5);
+            nextBubble = this.physics.add.image(
+                nextBubble.x,
+                nextBubble.y,
+                rand.pick(randomBall)
+            ).setCircle(27);
+            nextBubble.color = nextBubble.texture.key.slice(5);
+            this.physics.moveToObject(bubble, checkInPut.position, 1000);
             timeSinceLastAttackBullet = delta;
         }
-        this.physics.world.wrap(bulletGroup);
-        for (let i = 0; i < bulletGroup.getChildren().length; i++) {
-            let bulletInGroup = bulletGroup.getChildren()[i];
-            for (let j = 0; j < ballGroup4.getChildren().length; j++) {
-                let ballInGroup = ballGroup4.getChildren()[j];
-                this.physics.add.collider(ballInGroup, bulletInGroup, () => {
-                    if (ballInGroup.color != bulletInGroup.color) {
-                        ballInGroup.destroy();
-                        bulletInGroup.destroy();
-                    } else {
-                        bulletInGroup.setVelocity(0);
-                        oldBullet.add(bulletInGroup);
-                    }
-                });
-            }
-            for (let j = 0; j < oldBullet.getChildren().length; j++) {
-                let ballInGroup = oldBullet.getChildren()[j];
-                this.physics.add.collider(ballInGroup, bulletInGroup, () => {
-                    if (ballInGroup.color == bulletInGroup.color) {
-                        if(ballInGroup.stack.length==0){
-                            bulletInGroup.stack.push(ballInGroup)
-                            bulletInGroup.stack.push(bulletInGroup)
-                        }
-                        else{
-                            bulletInGroup.stack = [...ballInGroup.stack]
-                            bulletInGroup.stack.push(ballInGroup)
-                        }
-                        if(bulletInGroup.stack.length>=3){
-                            bulletInGroup.destroy()
-                            ballInGroup.stack.forEach((b)=>{
-                                b.destroy()
-                            })
-                            ballInGroup.stack=[]
-                        }
-                        else{
-                            bulletInGroup.setVelocity(0);
-                            oldBullet.add(bulletInGroup);     
-                        }
-                    } 
-                    else {
-                        bulletInGroup.setVelocity(0);
-                        oldBullet.add(bulletInGroup);
-                    }
-                });
-            }
-            if (bulletInGroup.y > 500) {
-                bulletInGroup.destroy();
-            }
-        }
+
+        // stackBubble.forEach((b)=>{
+        //     for (let index = 0; index < bubbleGrid.getChildren().length; index++) {
+        //         let bubbleInGrid = bubbleGrid.getChildren()[index]
+        //         this.physics.overlap(b,bubbleInGrid,()=>{
+        //             if(b.color == bubbleInGrid.color){
+        //                 b.setVelocity(0,0);
+        //                 console.log("wow");
+        //             }
+        //         })
+        //     }
+        // })
     }
 }
 
