@@ -1,15 +1,16 @@
 import * as Phaser from "phaser";
 
 let bg;
-let bubbles = [];
-let bubbleGrid = [];
+let bubbleGrid;
 let shooter;
 let nextBubble;
-let canShoot = true;
+let checkInPut;
+let timeSinceLastAttackBullet = 0;
+let delayBullet = 550;
 let row = 70;
 let column = 30;
-let rowGrid = 9;
-let colsGrid = 14;
+let bubbles;
+let stackBubble=[]
 let aim;
 const rand = new Phaser.Math.RandomDataGenerator();
 let randomBall = [
@@ -20,9 +21,6 @@ let randomBall = [
     "ball_yellow",
     "ball_red",
 ];
-let text1;
-let stop = 1;
-let bubble;
 
 class GameScene extends Phaser.Scene {
     constructor(test) {
@@ -43,12 +41,9 @@ class GameScene extends Phaser.Scene {
     }
 
     create() {
-        text1 = this.add.text(10, 550, "", { fill: "#00ff00" });
-        shooter = this.physics.add
-            .sprite(400, 500, rand.pick(randomBall))
-            .setCircle(27);
+        // bg = this.add.tileSprite(0, 0, 800, 600, "bg").setOrigin(0, 0);
+        shooter = this.physics.add.sprite(400, 500, rand.pick(randomBall)).setCircle(27);
         shooter.color = shooter.texture.key.slice(5);
-        bubble = shooter;
         shooter.setInteractive();
 
         this.input.setDraggable(shooter);
@@ -57,71 +52,36 @@ class GameScene extends Phaser.Scene {
             shooter.x + 30,
             shooter.y + 50,
             rand.pick(randomBall)
-        );
+        ).setCircle(27);
         nextBubble.color = nextBubble.texture.key.slice(5);
 
-        for (let i = 0; i < rowGrid - 8; i++) {
-            bubbles.push([]);
-            for (let j = 0; j < colsGrid; j++) {
+        checkInPut = this.input.mousePointer;
+
+        bubbleGrid = this.physics.add.group();
+        bubbles = this.physics.add.group();
+
+        for (let i = 1; i <= 5; i++) {
+            for (let j = 1; j <= 14; j++) {
                 let ball;
                 if (i % 2 == 0) {
-                    ball = this.physics.add.sprite(
-                        row,
-                        column,
-                        rand.pick(randomBall)
-                    );
+                    ball = this.physics.add.sprite(row, column, rand.pick(randomBall));
                     ball.color = ball.texture.key.slice(5);
                 } else {
-                    ball = this.physics.add.sprite(
+                    ball = this.add.sprite(
                         row - 25,
                         column,
                         rand.pick(randomBall)
                     );
                     ball.color = ball.texture.key.slice(5);
                 }
-                ball.setImmovable();
-                ball.setCircle(27);
-                ball.status = false;
-                if (ball.x >= 780) {
+                if (ball.x > 780) {
                     ball.destroy();
                 }
                 row += 55;
-                bubbles[i].push(j == 13 && i % 2 == 0 ? null : ball);
+                bubbleGrid.add(ball);
             }
             row = 70;
-            column += 50;
-        }
-
-        row = 70;
-        column = 30;
-
-        for (let i = 0; i < rowGrid; i++) {
-            bubbleGrid.push([])
-            for (let j = 0; j < colsGrid; j++) {
-                let ball;
-                if (i % 2 == 0) {
-                    ball = this.physics.add.sprite(
-                        row,
-                        column,
-                        rand.pick(randomBall)
-                    );
-                } else {
-                    ball = this.physics.add.sprite(
-                        row - 25,
-                        column,
-                        rand.pick(randomBall)
-                    );
-                }
-                ball.setCircle(27);
-                ball.visible = false;
-                if (ball.x >= 780) {
-                    ball.destroy();
-                }
-                bubbleGrid[i].push(j == 13 && i % 2 == 0 ? null : ball);
-                row += 55;
-            }
-            row = 70;
-            column += 50;
+            column += 55;
         }
         this.input.on("pointermove", (pointer) => {
             aim = Phaser.Math.Angle.Between(
@@ -134,65 +94,45 @@ class GameScene extends Phaser.Scene {
     }
 
     update(delta, time) {
-        var pointer = this.input.activePointer;
-        text1.setText(["x: " + pointer.worldX, "y: " + pointer.worldY]);
-
         shooter.rotation = aim;
         nextBubble.rotation = aim;
-
-        if (this.input.activePointer.leftButtonDown() && canShoot) {
-            stop = 1;
-            bubble = this.physics.add
-                .sprite(shooter.x, shooter.y, shooter.texture.key)
-                .setCircle(27);
-            bubble.color = shooter.color;
-            bubble.setCollideWorldBounds();
-            bubble.setBounce(1);
-            bubble.status = false;
-
-            this.physics.moveToObject(bubble, pointer.position, 1000);
-            shooter = this.physics.add.sprite(
+        if (
+            checkInPut.leftButtonDown() &&
+            delta > timeSinceLastAttackBullet + delayBullet
+        ) {
+            const bubble = this.physics.add.sprite(
                 shooter.x,
                 shooter.y,
-                nextBubble.texture.key
-            );
+                shooter.texture.key
+            ).setCircle(27);
+            bubble.color = shooter.color;
+            bubble.setBounce(1)
+            bubble.setCollideWorldBounds(true)
+            stackBubble.push(bubble)
 
+            shooter = this.physics.add.sprite(shooter.x,shooter.y,nextBubble.texture.key).setCircle(27)
             shooter.color = shooter.texture.key.slice(5);
             nextBubble = this.physics.add.image(
                 nextBubble.x,
                 nextBubble.y,
                 rand.pick(randomBall)
-            );
+            ).setCircle(27);
             nextBubble.color = nextBubble.texture.key.slice(5);
+            this.physics.moveToObject(bubble, checkInPut.position, 1000);
+            timeSinceLastAttackBullet = delta;
         }
 
-        bubble.body.velocity.x !== 0 || bubble.body.velocity.y !== 0
-            ? (canShoot = false)
-            : (canShoot = true);
-
-        // for (let index = 0; index < bubbleGrid.getChildren().length; index++) {
-        // }
-
-        for (let i = 0; i < bubbles.length; i++) {
-            for (let j = 0; j < bubbles[i].length; j++) {
-                if (bubbles[i][j] !== null) {
-                    this.physics.world.collide(bubble,bubbles[i][j],()=>{
-                        // rowGrid += 1
-                        if(stop == 1){
-                            bubbles = [...bubbles,[]]
-                            stop+=1
-                        }
-                        bubble.setVelocity(0)
-                        bubble.setImmovable()
-                        this.physics.world.overlap(bubbleGrid[i+1][j],bubble,()=>{
-                            bubble.x=bubbleGrid[i+1][j].x
-                            bubble.y=bubbleGrid[i+1][j].y
-                            bubbles[i+1][j] = bubble
-                        })
-                    })
-                }
-            }
-        }
+        // stackBubble.forEach((b)=>{
+        //     for (let index = 0; index < bubbleGrid.getChildren().length; index++) {
+        //         let bubbleInGrid = bubbleGrid.getChildren()[index]
+        //         this.physics.overlap(b,bubbleInGrid,()=>{
+        //             if(b.color == bubbleInGrid.color){
+        //                 b.setVelocity(0,0);
+        //                 console.log("wow");
+        //             }
+        //         })
+        //     }
+        // })
     }
 }
 
