@@ -8,8 +8,9 @@ let nextBubble;
 let canShoot = true;
 let row = 70;
 let column = 30;
-let rowGrid = 9;
-let colsGrid = 14;
+let rowBubble = 4;
+let rowGrid = 7;
+let colsBubble = 13;
 let aim;
 const rand = new Phaser.Math.RandomDataGenerator();
 let randomBall = [
@@ -23,6 +24,7 @@ let randomBall = [
 let text1;
 let stop = 1;
 let bubble;
+let isCollide = false;
 
 class GameScene extends Phaser.Scene {
     constructor(test) {
@@ -49,6 +51,7 @@ class GameScene extends Phaser.Scene {
             .setCircle(27);
         shooter.color = shooter.texture.key.slice(5);
         bubble = shooter;
+        bubble.setImmovable();
         shooter.setInteractive();
 
         this.input.setDraggable(shooter);
@@ -60,9 +63,9 @@ class GameScene extends Phaser.Scene {
         );
         nextBubble.color = nextBubble.texture.key.slice(5);
 
-        for (let i = 0; i < rowGrid - 8; i++) {
+        for (let i = 0; i < rowBubble; i++) {
             bubbles.push([]);
-            for (let j = 0; j < colsGrid; j++) {
+            for (let j = 0; j < colsBubble; j++) {
                 let ball;
                 if (i % 2 == 0) {
                     ball = this.physics.add.sprite(
@@ -81,23 +84,19 @@ class GameScene extends Phaser.Scene {
                 }
                 ball.setImmovable();
                 ball.setCircle(27);
-                ball.status = false;
                 if (ball.x >= 780) {
                     ball.destroy();
                 }
-                row += 55;
-                bubbles[i].push(j == 13 && i % 2 == 0 ? null : ball);
+                bubbles[i].push(ball);
+                row += 57;
             }
             row = 70;
-            column += 50;
+            column += 60;
         }
 
-        row = 70;
-        column = 30;
-
-        for (let i = 0; i < rowGrid; i++) {
-            bubbleGrid.push([])
-            for (let j = 0; j < colsGrid; j++) {
+        for (let i = 0; i < rowGrid - rowBubble; i++) {
+            bubbleGrid.push([]);
+            for (let j = 0; j < colsBubble; j++) {
                 let ball;
                 if (i % 2 == 0) {
                     ball = this.physics.add.sprite(
@@ -114,14 +113,15 @@ class GameScene extends Phaser.Scene {
                 }
                 ball.setCircle(27);
                 ball.visible = false;
+                ball.have = false;
                 if (ball.x >= 780) {
                     ball.destroy();
                 }
-                bubbleGrid[i].push(j == 13 && i % 2 == 0 ? null : ball);
-                row += 55;
+                bubbleGrid[i].push(ball);
+                row += 57;
             }
             row = 70;
-            column += 50;
+            column += 60;
         }
         this.input.on("pointermove", (pointer) => {
             aim = Phaser.Math.Angle.Between(
@@ -135,10 +135,14 @@ class GameScene extends Phaser.Scene {
 
     update(delta, time) {
         var pointer = this.input.activePointer;
-        text1.setText(["x: " + pointer.worldX, "y: " + pointer.worldY]);
 
         shooter.rotation = aim;
         nextBubble.rotation = aim;
+        text1.setText([
+            "x: " + pointer.worldX,
+            "y: " + pointer.worldY,
+            "aim: " + aim,
+        ]);
 
         if (this.input.activePointer.leftButtonDown() && canShoot) {
             stop = 1;
@@ -148,9 +152,9 @@ class GameScene extends Phaser.Scene {
             bubble.color = shooter.color;
             bubble.setCollideWorldBounds();
             bubble.setBounce(1);
-            bubble.status = false;
 
             this.physics.moveToObject(bubble, pointer.position, 1000);
+
             shooter = this.physics.add.sprite(
                 shooter.x,
                 shooter.y,
@@ -170,27 +174,36 @@ class GameScene extends Phaser.Scene {
             ? (canShoot = false)
             : (canShoot = true);
 
-        // for (let index = 0; index < bubbleGrid.getChildren().length; index++) {
-        // }
+        for (let i = 0; i < bubbleGrid.length; i++) {
+            for (let j = 0; j < bubbleGrid[i].length; j++) {
+                this.physics.world.overlap(bubble, bubbleGrid[i][j], (getBubble) => {
+                    if (stop == 1) {
+                        bubble.setVelocity(0, 0);
+                        bubble = this.physics.add.sprite(
+                            bubbleGrid[i][j].x,
+                            bubbleGrid[i][j].y,
+                            bubble.texture.key
+                        );
+                        bubble.color = bubble.texture.key.slice(5);
+                        bubble.setCircle(27);
+                        getBubble.destroy();
+                        stop = 2;
+                    }
+                });
+            }
+        }
 
         for (let i = 0; i < bubbles.length; i++) {
             for (let j = 0; j < bubbles[i].length; j++) {
-                if (bubbles[i][j] !== null) {
-                    this.physics.world.collide(bubble,bubbles[i][j],()=>{
-                        // rowGrid += 1
-                        if(stop == 1){
-                            bubbles = [...bubbles,[]]
-                            stop+=1
-                        }
-                        bubble.setVelocity(0)
-                        bubble.setImmovable()
-                        this.physics.world.overlap(bubbleGrid[i+1][j],bubble,()=>{
-                            bubble.x=bubbleGrid[i+1][j].x
-                            bubble.y=bubbleGrid[i+1][j].y
-                            bubbles[i+1][j] = bubble
-                        })
-                    })
-                }
+                this.physics.world.collide(
+                    bubble,
+                    bubbles[i][j],
+                    (bubble1, bubble2) => {
+                        rowBubble+=1
+                    },
+                    null,
+                    this
+                );
             }
         }
     }
