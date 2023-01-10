@@ -24,6 +24,7 @@ let randomBall = [
 let text1;
 let stop = 1;
 let bubble;
+let bubbleTest;
 let isCollide = false;
 
 class GameScene extends Phaser.Scene {
@@ -94,6 +95,8 @@ class GameScene extends Phaser.Scene {
             column += 60;
         }
 
+        bubbleTest = this.physics.add.sprite(10,column - 60,"ball_blue")
+
         for (let i = 0; i < rowGrid - rowBubble; i++) {
             bubbleGrid.push([]);
             for (let j = 0; j < colsBubble; j++) {
@@ -113,7 +116,6 @@ class GameScene extends Phaser.Scene {
                 }
                 ball.setCircle(27);
                 ball.visible = false;
-                ball.have = false;
                 if (ball.x >= 780) {
                     ball.destroy();
                 }
@@ -176,20 +178,27 @@ class GameScene extends Phaser.Scene {
 
         for (let i = 0; i < bubbleGrid.length; i++) {
             for (let j = 0; j < bubbleGrid[i].length; j++) {
-                this.physics.world.overlap(bubble, bubbleGrid[i][j], (getBubble) => {
-                    if (stop == 1) {
-                        bubble.setVelocity(0, 0);
-                        bubble = this.physics.add.sprite(
-                            bubbleGrid[i][j].x,
-                            bubbleGrid[i][j].y,
-                            bubble.texture.key
-                        );
-                        bubble.color = bubble.texture.key.slice(5);
-                        bubble.setCircle(27);
-                        getBubble.destroy();
-                        stop = 2;
+                this.physics.world.overlap(
+                    bubble,
+                    bubbleGrid[i][j],
+                    (bubble1) => {
+                        if (stop == 2) {
+                            bubble = this.physics.add.sprite(
+                                bubbleGrid[i][j].x,
+                                bubbleGrid[i][j].y,
+                                bubble.texture.key
+                            );
+                            bubble.color = bubble.texture.key.slice(5);
+                            bubble.setImmovable();
+                            bubble.setCircle(27);
+                            bubbles[bubbles.length -1][j] = bubble
+                            bubble1.destroy();
+                            console.log(bubbles[bubbles.length -1]);
+                            console.log(bubbles.length);
+                            stop = 3;
+                        }
                     }
-                });
+                );
             }
         }
 
@@ -199,7 +208,15 @@ class GameScene extends Phaser.Scene {
                     bubble,
                     bubbles[i][j],
                     (bubble1, bubble2) => {
-                        rowBubble+=1
+                        bubble.setVelocity(0, 0);
+                        if (stop == 1) {
+                            if (bubble.y > bubbleTest.y) {
+                                let newRow = new Array(13);
+                                bubbles.push(newRow);
+                            }
+                            bubbleTest = this.physics.add.sprite(10,bubbles[i][j].y + 60,"ball_blue")
+                            stop = 2;
+                        }
                     },
                     null,
                     this
