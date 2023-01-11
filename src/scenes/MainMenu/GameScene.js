@@ -9,8 +9,8 @@ let canShoot = true;
 let row = 70;
 let column = 30;
 let rowBubble = 4;
-let rowGrid = 8;
-let colsBubble = 13;
+let rowGrid = 10;
+let colsBubble = 14;
 let aim;
 const rand = new Phaser.Math.RandomDataGenerator();
 let randomBall = [
@@ -24,7 +24,7 @@ let randomBall = [
 let text1;
 let stop = 1;
 let bubble;
-let bubbleTest=[];
+let bubbleTest = [];
 let isCollide = false;
 
 class GameScene extends Phaser.Scene {
@@ -46,6 +46,9 @@ class GameScene extends Phaser.Scene {
     }
 
     create() {
+        bg = this.add.graphics();
+        bg.fillStyle(0xcfcfcf,0.5);
+        bg.fillRect(0, 0, this.scale.width, this.scale.height);
         text1 = this.add.text(10, 550, "", { fill: "#00ff00" });
         shooter = this.physics.add
             .sprite(400, 500, rand.pick(randomBall))
@@ -89,14 +92,14 @@ class GameScene extends Phaser.Scene {
                     ball.destroy();
                 }
                 bubbles[i].push(ball);
-                row += 57;
+                row += 53;
             }
             row = 70;
-            column += 60;
+            column += 50;
         }
 
-        row = 70
-        column =30
+        row = 70;
+        column = 30;
         for (let i = 0; i < rowGrid; i++) {
             bubbleGrid.push([]);
             for (let j = 0; j < colsBubble; j++) {
@@ -120,20 +123,20 @@ class GameScene extends Phaser.Scene {
                     ball.destroy();
                 }
                 bubbleGrid[i].push(ball);
-                row += 57;
+                row += 53;
             }
             row = 70;
-            column += 60;
+            column += 50;
         }
 
-        column =30
+        column = 30;
         for (let index = 0; index < bubbleGrid.length; index++) {
-            console.log("wow");
-            let ball = this.physics.add.sprite(0,column, "ball_blue");
-            column+=60
-            bubbleTest.push(ball)
+            // let ball = this.physics.add.sprite(0,column, "ball_blue");
+            let ball = this.physics.add.sprite(-60, column, "ball_blue");
+            ball.setCircle(27);
+            column += 50;
+            bubbleTest.push(ball);
         }
-
 
         this.input.on("pointermove", (pointer) => {
             aim = Phaser.Math.Angle.Between(
@@ -143,7 +146,6 @@ class GameScene extends Phaser.Scene {
                 pointer.y
             );
         });
-        console.log(bubbleTest[4].y);
     }
 
     update(delta, time) {
@@ -151,11 +153,11 @@ class GameScene extends Phaser.Scene {
 
         shooter.rotation = aim;
         nextBubble.rotation = aim;
-        text1.setText([
-            "x: " + pointer.worldX,
-            "y: " + pointer.worldY,
-            "aim: " + aim,
-        ]);
+        // text1.setText([
+        //     "x: " + pointer.worldX,
+        //     "y: " + pointer.worldY,
+        //     "aim: " + aim,
+        // ]);
 
         if (this.input.activePointer.leftButtonDown() && canShoot) {
             stop = 1;
@@ -166,7 +168,8 @@ class GameScene extends Phaser.Scene {
             bubble.setCollideWorldBounds();
             bubble.setBounce(1);
 
-            this.physics.moveToObject(bubble, pointer.position, 1000);
+            this.physics.moveToObject(bubble, pointer.position, 1500);
+            // this.physics.moveToObject(bubble, pointer.position, 500 );
 
             shooter = this.physics.add.sprite(
                 shooter.x,
@@ -194,25 +197,85 @@ class GameScene extends Phaser.Scene {
                     bubbleGrid[i][j],
                     (bubble1) => {
                         if (stop == 2) {
-                            bubble = this.physics.add.sprite(
-                                bubbleGrid[i][j].x,
-                                bubbleGrid[i][j].y,
-                                bubble.texture.key
-                            );
+                            let boundsA = bubbleGrid[i][j].getBounds();
+                            let boundsB = bubble.getBounds();
+                            let boundsC =
+                                bubbleGrid[i][
+                                    j >= colsBubble - 1 ? j : j + 1
+                                ].getBounds();
+                            let boundsD = bubbleGrid[i + 1][j].getBounds();
+                            let overlapArea1 =
+                                Phaser.Geom.Rectangle.Intersection(
+                                    boundsA,
+                                    boundsB
+                                );
+                            let overlapArea2 =
+                                Phaser.Geom.Rectangle.Intersection(
+                                    boundsB,
+                                    boundsC
+                                );
+                            let overlapArea3 =
+                                Phaser.Geom.Rectangle.Intersection(
+                                    boundsB,
+                                    boundsD
+                                );
+                            let getArea1 =
+                                Math.PI *
+                                overlapArea1.width *
+                                overlapArea1.height;
+                            let getArea2 =
+                                Math.PI *
+                                overlapArea2.width *
+                                overlapArea2.height;
+                            let getArea3 =
+                                Math.PI *
+                                overlapArea3.width *
+                                overlapArea3.height;
+                            // console.log("i,j", i, j);
+                            // console.log("Area1: i,j", i, j, getArea1);
+                            // console.log("Area2: i,j+1", i, j + 1, getArea2);
+                            // console.log("Area3: i+1,j", i + 1, j, getArea3);
+                            if (getArea1 < getArea2) {
+                                if (getArea3 < getArea2) {
+                                    // console.log("wow1");
+                                    bubble = this.physics.add.sprite(
+                                        bubbleGrid[i][j + 1].x,
+                                        bubbleGrid[i][j + 1].y,
+                                        bubble.texture.key
+                                    );
+                                }
+                            } else if (
+                                getArea3 > getArea1 &&
+                                this.physics.world.overlap(
+                                    bubble,
+                                    bubbleGrid[i + 1][j]
+                                )
+                            ) {
+                                if (getArea3 > getArea2) {
+                                    // console.log("wow2");
+                                    bubble = this.physics.add.sprite(
+                                        bubbleGrid[i + 1][j].x,
+                                        bubbleGrid[i + 1][j].y,
+                                        bubble.texture.key
+                                    );
+                                }
+                            } else {
+                                // console.log("wow3");
+                                bubble = this.physics.add.sprite(
+                                    bubbleGrid[i][j].x,
+                                    bubbleGrid[i][j].y,
+                                    bubble.texture.key
+                                );
+                            }
                             bubble.color = bubble.texture.key.slice(5);
                             bubble.setImmovable();
                             bubble.setCircle(27);
-                            if(bubble.y <= bubbleTest[bubbles.length].y){
-                                bubbles[i][j] = bubble
-                            }
-                            else{
+                            if (bubble.y <= bubbleTest[bubbles.length - 1].y) {
+                                bubbles[i][j] = bubble;
+                            } else {
                                 bubbles[bubbles.length - 1][j] = bubble;
                             }
                             bubble1.destroy();
-                            console.log(`${bubbles.length}:`,bubbles[bubbles.length - 1]);
-                            console.log(`${bubbles.length-1}:`,bubbles[bubbles.length - 2]);
-                            console.log(`${bubbles.length-2}:`,bubbles[bubbles.length - 3]);
-                            console.log(bubbles.length);
                             stop = 3;
                         }
                     }
@@ -228,8 +291,11 @@ class GameScene extends Phaser.Scene {
                     (bubble1, bubble2) => {
                         bubble.setVelocity(0, 0);
                         if (stop == 1) {
-                            if (bubble.body.center.y > bubbleTest[bubbles.length-1].y) {
-                                let newRow = new Array(13);
+                            if (
+                                bubble.body.center.y >
+                                bubbleTest[bubbles.length - 1].y
+                            ) {
+                                let newRow = new Array(14);
                                 bubbles.push(newRow);
                             }
                             stop = 2;

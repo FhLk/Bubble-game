@@ -2,6 +2,7 @@ import * as Phaser from "phaser";
 
 let object1;
 let object2;
+let object3
 class GameSceneTest extends Phaser.Scene {
     constructor(test) {
         super({
@@ -22,30 +23,53 @@ class GameSceneTest extends Phaser.Scene {
 
     create() {
         object1 = this.physics.add.image(100, 100, "ball_blue");
-        object1.setCircle(27)
+        object1.setCircle(27);
         object1.setCollideWorldBounds(true);
         object1.setBounce(1);
         object1.setMass(1);
         object1.setInteractive();
 
-        object2 = this.physics.add.image(100, 120, "ball_green");
-        object2.setCircle(27)
-        object1.setCollideWorldBounds(true);
-        object1.setBounce(1);
-        object1.setMass(1);
-        object1.setInteractive();
+        object3 = this.physics.add.image(170, 120, "ball_green");
+        object3.setCircle(27);
+        object3.setCollideWorldBounds(true);
+        object3.setBounce(1);
+        object3.setMass(1);
+        object3.setInteractive();
 
-        let circle1 = new Phaser.Geom.Circle(object1.x, object1.y, object1.width / 2);
-        let circle2 = new Phaser.Geom.Circle(object2.x, object2.y, object2.width / 2);
-        // console.log(Phaser.Geom.Circle.Contains(circle1, circle2));
-        if (Phaser.Geom.Circle.Contains(circle1,circle2.x,circle2.y) || Phaser.Geom.Circle.Contains(circle2, circle1.x,circle1.y)) {
-            
+        object2 = this.physics.add.image(130, 110, "ball_yellow");
+        object2.setCircle(27);
+        object2.setCollideWorldBounds(true);
+        object2.setBounce(1);
+        object2.setMass(1);
+        object2.setInteractive();
+
+        var graphics = this.add.graphics();
+        graphics.fillStyle(0xff0000, 0.5);
+        if (this.physics.overlap(object1, object2)) {
+            var boundsA = object1.getBounds();
+            var boundsB = object2.getBounds();
+            var overlapArea = Phaser.Geom.Rectangle.Intersection(
+                boundsA,
+                boundsB
+            );
+            console.log(overlapArea);
+            graphics.fillEllipse(overlapArea.centerX,overlapArea.centerY,overlapArea.width,overlapArea.height)
+            console.log("1,2",Math.PI * overlapArea.width* overlapArea.height);
+        }
+        if (this.physics.overlap(object2, object3)) {
+            var boundsA = object2.getBounds();
+            var boundsB = object3.getBounds();
+            var overlapArea = Phaser.Geom.Rectangle.Intersection(
+                boundsA,
+                boundsB
+            );
+            console.log(overlapArea);
+            graphics.fillEllipse(overlapArea.centerX,overlapArea.centerY,overlapArea.width,overlapArea.height)
+            console.log("2,3",Math.PI * overlapArea.width* overlapArea.height);
         }
     }
 
-    update(delta, time) {
-        
-    }
+    update(delta, time) {}
 }
 
 export default GameSceneTest;
