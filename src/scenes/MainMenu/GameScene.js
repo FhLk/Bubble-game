@@ -9,7 +9,7 @@ let canShoot = true;
 let row = 70;
 let column = 30;
 let rowBubble = 4;
-let rowGrid = 7;
+let rowGrid = 8;
 let colsBubble = 13;
 let aim;
 const rand = new Phaser.Math.RandomDataGenerator();
@@ -24,7 +24,7 @@ let randomBall = [
 let text1;
 let stop = 1;
 let bubble;
-let bubbleTest;
+let bubbleTest=[];
 let isCollide = false;
 
 class GameScene extends Phaser.Scene {
@@ -95,9 +95,9 @@ class GameScene extends Phaser.Scene {
             column += 60;
         }
 
-        bubbleTest = this.physics.add.sprite(10,column - 60,"ball_blue")
-
-        for (let i = 0; i < rowGrid - rowBubble; i++) {
+        row = 70
+        column =30
+        for (let i = 0; i < rowGrid; i++) {
             bubbleGrid.push([]);
             for (let j = 0; j < colsBubble; j++) {
                 let ball;
@@ -125,6 +125,16 @@ class GameScene extends Phaser.Scene {
             row = 70;
             column += 60;
         }
+
+        column =30
+        for (let index = 0; index < bubbleGrid.length; index++) {
+            console.log("wow");
+            let ball = this.physics.add.sprite(0,column, "ball_blue");
+            column+=60
+            bubbleTest.push(ball)
+        }
+
+
         this.input.on("pointermove", (pointer) => {
             aim = Phaser.Math.Angle.Between(
                 shooter.x,
@@ -133,6 +143,7 @@ class GameScene extends Phaser.Scene {
                 pointer.y
             );
         });
+        console.log(bubbleTest[4].y);
     }
 
     update(delta, time) {
@@ -191,9 +202,16 @@ class GameScene extends Phaser.Scene {
                             bubble.color = bubble.texture.key.slice(5);
                             bubble.setImmovable();
                             bubble.setCircle(27);
-                            bubbles[bubbles.length -1][j] = bubble
+                            if(bubble.y <= bubbleTest[bubbles.length].y){
+                                bubbles[i][j] = bubble
+                            }
+                            else{
+                                bubbles[bubbles.length - 1][j] = bubble;
+                            }
                             bubble1.destroy();
-                            console.log(bubbles[bubbles.length -1]);
+                            console.log(`${bubbles.length}:`,bubbles[bubbles.length - 1]);
+                            console.log(`${bubbles.length-1}:`,bubbles[bubbles.length - 2]);
+                            console.log(`${bubbles.length-2}:`,bubbles[bubbles.length - 3]);
                             console.log(bubbles.length);
                             stop = 3;
                         }
@@ -210,11 +228,10 @@ class GameScene extends Phaser.Scene {
                     (bubble1, bubble2) => {
                         bubble.setVelocity(0, 0);
                         if (stop == 1) {
-                            if (bubble.y > bubbleTest.y) {
+                            if (bubble.body.center.y > bubbleTest[bubbles.length-1].y) {
                                 let newRow = new Array(13);
                                 bubbles.push(newRow);
                             }
-                            bubbleTest = this.physics.add.sprite(10,bubbles[i][j].y + 60,"ball_blue")
                             stop = 2;
                         }
                     },
